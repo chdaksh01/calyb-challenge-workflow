@@ -1,0 +1,68 @@
+{
+  "meta": {
+    "workflow_name": "Create Black Friday Promotion (Track A)",
+    "workflow_version": "1.0",
+    "description": "Creates a promotional campaign dependent on a specific Customer Group ID."
+  },
+  "steps": [
+    {
+      "step_id": "find_vip_group",
+      "type": "query",
+      "operation": "customerGroups",
+      "description": "Query the API to find the ID of the VIP group using a name filter.",
+      "variables": {
+        "options": {
+          "filter": {
+            "name": { "eq": "VIP" }
+          }
+        }
+      },
+      "output_extraction": {
+        "vip_group_id": "items[0].id"
+      }
+    },
+    {
+      "step_id": "create_promo_campaign",
+      "type": "mutation",
+      "operation": "createPromotion",
+      "dependencies": ["find_vip_group"],
+      "description": "Create the Black Friday promotion with conditional logic linking to the VIP group.",
+      "variables": {
+        "input": {
+          "name": "Black Friday",
+          "enabled": true,
+          "couponCode": "BF2024",
+          "perCustomerUsageLimit": 0,
+          "startsAt": null,
+          "endsAt": null,
+          "conditions": [
+            {
+              "code": "minimum_order_amount",
+              "arguments": [
+                { "name": "amount", "value": "10000" },
+                { "name": "taxInclusive", "value": "false" }
+              ]
+            },
+            {
+              "code": "customer_group",
+              "arguments": [
+                {
+                  "name": "customerGroupId",
+                  "value": "{{find_vip_group.vip_group_id}}" 
+                }
+              ]
+            }
+          ],
+          "actions": [
+            {
+              "code": "order_percentage_discount",
+              "arguments": [
+                { "name": "discount", "value": "15" }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
